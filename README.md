@@ -101,8 +101,6 @@ The release uses Python 3.11 and the PyTorch, Hugging Face, SentenceTransformers
 ## ♻️ Reproduction workflow
 
 The commands below reproduce the main prediction pipeline used in the paper.
-They assume that the Search-R1 or R1-Searcher trajectory and retrieval CSVs
-have already been generated.
 
 ### 1. Run intermediate-answer probing
 
@@ -152,6 +150,8 @@ Repeat for relation ∈ {adjacent_think, long_distance, intra_iteration}
 and target ∈ {performance, utility}.
 
 ### 4. Train the prediction head and obtain P_i and U_i predictions
+
+Merge the unsupervised features, the six supervised prediction signals, and, for the probing-enhanced setting, prob and diff_prob, by iteration qid. The resulting CSV must also retain the trajectory metadata and target/split columns required by the prediction-head training code.
 
 ```bash
 python -m predictions.prediction_head.train \
