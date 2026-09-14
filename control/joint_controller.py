@@ -17,8 +17,14 @@ Stopping policy:
 3. Otherwise continue to natural termination.
 """
 
+from __future__ import annotations
+
+import argparse
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable, Sequence
+
+import pandas as pd
 
 
 @dataclass(frozen=True)
@@ -137,3 +143,40 @@ def apply_joint_controller(
         reason="natural_stop",
         states=states,
     )
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Apply the CIKM 2026 joint quality-utility early-stopping controller."
+    )
+    parser.add_argument("--performance-csv", type=Path, required=True)
+    parser.add_argument("--utility-csv", type=Path, required=True)
+    parser.add_argument("--quality-threshold", type=float, required=True)
+    parser.add_argument("--utility-threshold", type=float, required=True)
+    parser.add_argument("--output-csv", type=Path, required=True)
+    return parser
+
+
+def main() -> None:
+    args = _parser().parse_args()
+
+    # Imported here to avoid a module-level circular import: prediction_bridge
+    # uses apply_joint_controller() from this module.
+    from .prediction_bridge import apply_controller_to_predictions
+
+    performance = pd.read_csv(args.performance_csv)
+    utility = pd.read_csv(args.utility_csv)
+    decisions = apply_controller_to_predictions(
+        quality_predictions=performance,
+        utility_predictions=utility,
+        quality_threshold=args.quality_threshold,
+        utility_threshold=args.utility_threshold,
+    )
+
+    args.output_csv.parent.mkdir(parents=True, exist_ok=True)
+    decisions.to_csv(args.output_csv, index=False)
+    print(f"Saved {len(decisions)} trajectory decisions to {args.output_csv}")
+
+
+if __name__ == "__main__":
+    main()
