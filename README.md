@@ -144,7 +144,19 @@ python -m predictions.supervised.train \
     --output-dir <CHECKPOINT_OUTPUT_DIR>
 ```
 
-### 3. Train the prediction head and obtain P_i and U_i predictions
+### 3. Optional: compute probing signals
+
+For the probing-enhanced setting, trajectory-level probing outputs can be converted into the iteration-level `prob` and `diff_prob` features with:
+
+```bash
+python -m probing.run_probing features \
+    --probing-csv <PROBING_RESULTS_CSV> \
+    --output-csv <PROBING_FEATURES_CSV>
+```
+
+To run Search-R1 or R1-Searcher with intermediate-answer probing directly, `probing.run_probing` also provides a `run` mode. A live run needs a PyTerrier retriever supplied through a local `module:function` factory; see [`probing/README.md`](probing/README.md) for the complete command and retriever-factory interface.
+
+### 4. Train the prediction head and obtain P_i and U_i predictions
 
 ```bash
 python -m predictions.prediction_head.train \
@@ -155,9 +167,9 @@ python -m predictions.prediction_head.train \
     --save-output
 ```
 
-Repeat for target ∈ {performance, utility} and different window sizes.
+For the probing-enhanced setting, use `--signal-groups unsupervised supervised probing` after merging the probing features into the input CSV. Repeat for target ∈ {performance, utility} and different window sizes.
 
-### 4. Apply the joint early-stopping controller
+### 5. Apply the joint early-stopping controller
 
 ```bash
 python -m control.joint_controller \
