@@ -111,7 +111,7 @@ python -m probing.run_probing run \
     --queries-csv <QUERY_CSV> \
     --model search_r1 \
     --dense-index <E5_INDEX> \
-    --output-csv <PROBING_RESULTS_CSV> \
+    --output-csv <TRAJECTORY_CSV> \
     --features-output-csv <PROBING_FEATURES_CSV> \
     --top-k 3
 ```
