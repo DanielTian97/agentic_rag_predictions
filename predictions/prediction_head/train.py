@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import argparse
 from pathlib import Path
 
 import pandas as pd
@@ -162,3 +165,71 @@ def fit_prediction_head(
         )
 
     return model, predictions, (y_test.to_numpy(), y_pred), output_path
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Train the CIKM 2026 MLP prediction head and emit held-out predictions."
+    )
+    parser.add_argument(
+        "--input-csv",
+        type=Path,
+        required=True,
+        help="Merged feature CSV. It must include a split column with train/test rows.",
+    )
+    parser.add_argument(
+        "--target",
+        choices=["performance", "utility"],
+        required=True,
+        help="Prediction target: partial answer quality (performance) or partial utility.",
+    )
+    parser.add_argument("--window-size", type=int, choices=[1, 3, 5], default=1)
+    parser.add_argument(
+        "--signal-groups",
+        nargs="+",
+        choices=["unsupervised", "supervised", "probing"],
+        default=["unsupervised", "supervised", "probing"],
+    )
+    parser.add_argument(
+        "--include-iteration",
+        action="store_true",
+        help="Include the optional iteration-index feature (disabled in the main Table 3 signal groups).",
+    )
+    parser.add_argument(
+        "--no-type",
+        action="store_true",
+        help="Do not include the dataset question-type indicator when present.",
+    )
+    parser.add_argument("--random-state", type=int, default=42)
+    parser.add_argument("--save-output", action="store_true")
+    parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    parser.add_argument("--pipeline", default=None)
+    parser.add_argument("--dataset", default=None)
+    return parser
+
+
+def main() -> None:
+    args = _parser().parse_args()
+    dataframe = pd.read_csv(args.input_csv)
+
+    _, predictions, _, output_path = fit_prediction_head(
+        dataframe=dataframe,
+        target=args.target,
+        window_size=args.window_size,
+        signal_groups=tuple(args.signal_groups),
+        include_type=not args.no_type,
+        include_iteration=args.include_iteration,
+        random_state=args.random_state,
+        save_output=args.save_output,
+        output_root=args.output_root,
+        pipeline=args.pipeline,
+        dataset=args.dataset,
+    )
+
+    print(f"Generated {len(predictions)} held-out {args.target} predictions.")
+    if output_path is not None:
+        print(f"Saved predictions to {output_path}")
+
+
+if __name__ == "__main__":
+    main()
