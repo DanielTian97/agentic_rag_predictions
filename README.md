@@ -144,17 +144,22 @@ python -m predictions.supervised.train \
     --output-dir <CHECKPOINT_OUTPUT_DIR>
 ```
 
-### 3. Optional: compute probing signals
+### 3. Optional: run intermediate-answer probing
 
-For the probing-enhanced setting, trajectory-level probing outputs can be converted into the iteration-level `prob` and `diff_prob` features with:
+For the probing-enhanced setting, run Search-R1 or R1-Searcher with intermediate-answer probing directly:
 
 ```bash
-python -m probing.run_probing features \
-    --probing-csv <PROBING_RESULTS_CSV> \
-    --output-csv <PROBING_FEATURES_CSV>
+python -m probing.run_probing run \
+    --queries-csv <QUERY_CSV> \
+    --model search_r1 \
+    --retriever-factory my_retriever:build_retriever \
+    --retriever-kwargs '{"index_path": "<E5_INDEX>"}' \
+    --output-csv <PROBING_RESULTS_CSV> \
+    --features-output-csv <PROBING_FEATURES_CSV> \
+    --top-k 3
 ```
 
-To run Search-R1 or R1-Searcher with intermediate-answer probing directly, `probing.run_probing` also provides a `run` mode. A live run needs a PyTerrier retriever supplied through a local `module:function` factory; see [`probing/README.md`](probing/README.md) for the complete command and retriever-factory interface.
+Use `--model r1_searcher` for R1-Searcher. The trajectory-level probing output records the intermediate answers and confidence traces; supplying `--features-output-csv` additionally writes the aligned `prob` and `diff_prob` features used by the probing-enhanced prediction head. See [`probing/README.md`](probing/README.md) for the retriever-factory interface.
 
 ### 4. Train the prediction head and obtain P_i and U_i predictions
 
