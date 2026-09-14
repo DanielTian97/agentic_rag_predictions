@@ -143,7 +143,7 @@ python -m predictions.supervised.predict \
     --target performance \
     --data-csv <TRAJECTORY_FEATURE_CSV> \
     --checkpoint <SUPERVISED_CHECKPOINT> \
-    --output-dir <CHECKPOINT_OUTPUT_DIR>
+    --output <CHECKPOINT_OUTPUT_DIR>
 ```
 
 Repeat for relation ∈ {adjacent_think, long_distance, intra_iteration}
