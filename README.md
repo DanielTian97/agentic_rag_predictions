@@ -116,7 +116,7 @@ python -m probing.run_probing run \
     --top-k 3
 ```
 
-Use `--model r1_searcher` for R1-Searcher. The supplied dense index is expected to be the prepared HNSW-backed E5 PyTerrier-DR FlexIndex used by the retrieval pipeline. HNSW is part of the index configuration and is not exposed as a separate CLI option.
+Use `--model r1_searcher` for R1-Searcher. The supplied dense index is expected to be the prepared HNSW-backed E5 PyTerrier-DR FlexIndex used by the retrieval pipeline.
 
 The trajectory-level probing output records the intermediate answers and confidence traces; supplying `--features-output-csv` additionally writes the aligned `prob` and `diff_prob` features used by the probing-enhanced prediction head.
 
