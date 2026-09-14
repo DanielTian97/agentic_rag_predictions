@@ -115,40 +115,45 @@ python -m predictions.unsupervised.compute_features \
     --sparse-index <SPARSE_INDEX> \
     --dense-index <E5_INDEX> \
     --output-csv <UNSUPERVISED_FEATURES_CSV>
+```
 
 ### 2. Compute supervised prediction signals
 
+```bash
 python -m predictions.supervised.predict \
     --relation intra_iteration \
     --target performance \
     --data-csv <TRAJECTORY_FEATURE_CSV> \
     --checkpoint predictions/supervised/checkpoints/performance/intra_iteration/checkpoint.pt \
     --output predictions/supervised/prediction_results/intra_iteration_performance.csv
+```
 
-### 3. Train the prediction head and obtrain P_i and U_i predictions
+Repeat for relation ∈ {adjacent_think, long_distance, intra_iteration}
+and target ∈ {performance, utility}.
 
+### 3. Train the prediction head and obtain P_i and U_i predictions
+
+```bash
 python -m predictions.prediction_head.train \
     --input-csv <MERGED_FEATURES_CSV> \
     --target performance \
     --window-size 3 \
     --signal-groups unsupervised supervised \
     --save-output
+```
 
-python -m predictions.prediction_head.train \
-    --input-csv <MERGED_FEATURES_CSV> \
-    --target utility \
-    --window-size 3 \
-    --signal-groups unsupervised supervised \
-    --save-output
+Repeat for target ∈ {performance, utility} and differnt window sizes.
 
-### 4. Apply prediction in the joint early-stopping control
+### 4. Apply the joint early-stopping controller
 
+```bash
 python -m control.joint_controller \
     --performance-csv <PERFORMANCE_PREDICTIONS> \
     --utility-csv <UTILITY_PREDICTIONS> \
     --quality-threshold <THETA_P> \
     --utility-threshold <THETA_U> \
     --output-csv <CONTROL_DECISIONS_CSV>
+```
 
 ## Data and large experimental artifacts
 
