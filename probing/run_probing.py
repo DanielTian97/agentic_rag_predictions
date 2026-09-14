@@ -1,8 +1,12 @@
-"""Run intermediate-answer probing for Search-R1 or R1-Searcher.
+"""Run intermediate-answer probing or extract probing confidence features.
 
-The CLI executes a probed agent over a query CSV and saves the trajectory-level
-probing output. It can also optionally write the iteration-level ``prob`` and
-``diff_prob`` features used by the paper.
+The CLI exposes two modes:
+
+1. ``run`` executes a probed Search-R1 or R1-Searcher agent over a query CSV,
+   saves the trajectory-level probing output, and optionally writes the
+   iteration-level ``prob``/``diff_prob`` features used by the paper.
+2. ``features`` converts an existing probing-output CSV into the iteration-level
+   confidence features without rerunning the agent.
 
 A live probing run needs a PyTerrier retriever. To keep this release agnostic to
 local index layouts, the retriever is supplied through a Python factory callable
@@ -198,10 +202,24 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional JSON object of additional agent constructor arguments.",
     )
+
+    features_parser = subparsers.add_parser(
+        "features",
+        help="Extract prob/diff_prob from an existing probing-output CSV.",
+    )
+    features_parser.add_argument("--probing-csv", type=Path, required=True)
+    features_parser.add_argument("--output-csv", type=Path, required=True)
+
     return parser
 
 
 def _run_cli(args: argparse.Namespace) -> None:
+    if args.command == "features":
+        probing_results = pd.read_csv(args.probing_csv)
+        features = build_confidence_features(probing_results)
+        _write_csv(features, args.output_csv)
+        return
+
     queries = pd.read_csv(args.queries_csv)
     factory = _load_factory(args.retriever_factory)
     retriever_kwargs = _parse_json_object(
