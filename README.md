@@ -145,22 +145,11 @@ python -m predictions.supervised.predict \
     --target performance \
     --data-csv <TRAJECTORY_FEATURE_CSV> \
     --checkpoint <SUPERVISED_CHECKPOINT> \
-    --output predictions/supervised/prediction_results/intra_iteration_performance.csv
+    --output-dir <CHECKPOINT_OUTPUT_DIR>
 ```
 
 Repeat for relation ∈ {adjacent_think, long_distance, intra_iteration}
 and target ∈ {performance, utility}.
-
-For example, a checkpoint can be regenerated with:
-
-```bash
-python -m predictions.supervised.train \
-    --relation intra_iteration \
-    --target performance \
-    --train-csv <TRAIN_TRAJECTORY_FEATURE_CSV> \
-    --validation-csv <VALIDATION_TRAJECTORY_FEATURE_CSV> \
-    --output-dir <CHECKPOINT_OUTPUT_DIR>
-```
 
 ### 4. Train the prediction head and obtain P_i and U_i predictions
 
