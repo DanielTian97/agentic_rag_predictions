@@ -100,34 +100,55 @@ The release uses Python 3.11 and the PyTorch, Hugging Face, SentenceTransformers
 
 ## ♻️ Reproduction workflow
 
-The workflow is organised as follows:
+The commands below reproduce the main prediction pipeline used in the paper.
+They assume that the Search-R1 or R1-Searcher trajectory and retrieval CSVs
+have already been generated.
 
-```text
-agentic RAG trajectories
-        |
-        +--> unsupervised signals
-        +--> supervised relation predictions
-        +--> optional probing confidence signals
-                         |
-                         v
-                  prediction head
-                    /         \
-                  P_i         U_i
-                    \         /
-                     v       v
-                  joint controller
-```
+### 1. Compute unsupervised signals
 
-A typical reproduction consists of:
+```bash
+python -m predictions.unsupervised.compute_features \
+    --generation-csv <TRAJECTORY_CSV> \
+    --retrieval-csv <RETRIEVAL_CSV> \
+    --original-retrieval-csv <ORIGINAL_QUERY_RETRIEVAL_CSV> \
+    --rag-model r1 \
+    --sparse-index <SPARSE_INDEX> \
+    --dense-index <E5_INDEX> \
+    --output-csv <UNSUPERVISED_FEATURES_CSV>
 
-1. Generate Search-R1 or R1-Searcher trajectories with E5 top-3 retrieval.
-2. Compute the unsupervised feature block from the trajectory and retrieval CSV files.
-3. Train and apply the three supervised relation regressors for both targets.
-4. Optionally run intermediate-answer probing to obtain `prob` and `diff_prob`.
-5. Assemble the selected signal groups and train the MLP prediction head for P<sub>i</sub> and U<sub>i</sub>.
-6. Save prediction-head outputs and apply the joint controller to the aligned quality and utility predictions.
+### 2. Compute supervised prediction signals
 
-Module-level READMEs contain the detailed input/output conventions for each stage.
+python -m predictions.supervised.predict \
+    --relation intra_iteration \
+    --target performance \
+    --data-csv <TRAJECTORY_FEATURE_CSV> \
+    --checkpoint predictions/supervised/checkpoints/performance/intra_iteration/checkpoint.pt \
+    --output predictions/supervised/prediction_results/intra_iteration_performance.csv
+
+### 3. Train the prediction head and obtrain P_i and U_i predictions
+
+python -m predictions.prediction_head.train \
+    --input-csv <MERGED_FEATURES_CSV> \
+    --target performance \
+    --window-size 3 \
+    --signal-groups unsupervised supervised \
+    --save-output
+
+python -m predictions.prediction_head.train \
+    --input-csv <MERGED_FEATURES_CSV> \
+    --target utility \
+    --window-size 3 \
+    --signal-groups unsupervised supervised \
+    --save-output
+
+### 4. Apply prediction in the joint early-stopping control
+
+python -m control.joint_controller \
+    --performance-csv <PERFORMANCE_PREDICTIONS> \
+    --utility-csv <UTILITY_PREDICTIONS> \
+    --quality-threshold <THETA_P> \
+    --utility-threshold <THETA_U> \
+    --output-csv <CONTROL_DECISIONS_CSV>
 
 ## Data and large experimental artifacts
 
@@ -148,7 +169,7 @@ Lightweight tests are provided under `tests/`. In particular, the controller tes
 If you use this repository, please cite:
 
 ```bibtex
-@inproceedings{tian2026predicting,
+@inproceedings{agenticRAGpredictions,
   title     = {Predicting Partial Answer Quality and Utility in Agentic Retrieval-Augmented Generation},
   author    = {Tian, Fangzheng and Ganguly, Debasis and Macdonald, Craig},
   booktitle = {Proceedings of the 35th ACM International Conference on Information and Knowledge Management},
