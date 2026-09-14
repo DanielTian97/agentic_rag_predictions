@@ -6,22 +6,6 @@ Probe 0 is the zero-retrieval answer obtained **after initial reasoning `r0` and
 
 ## CLI
 
-The probing runner exposes two modes.
-
-### Extract confidence features from existing probing outputs
-
-If trajectory-level probing outputs have already been generated, obtain the iteration-level `prob` and `diff_prob` features with:
-
-```bash
-python -m probing.run_probing features \
-    --probing-csv <PROBING_RESULTS_CSV> \
-    --output-csv <PROBING_FEATURES_CSV>
-```
-
-The output contains `qid`, `sub_qid`, `prob`, `diff_prob`, and `zero_prob`.
-
-### Run probing and write confidence features
-
 A live probing run requires a PyTerrier retriever. Because index locations and construction differ across installations, the CLI accepts a small Python retriever factory in `module:function` form. The factory must return a `pyterrier.Transformer`.
 
 For example, if `my_retriever.py` provides `build_retriever(...)`, run:
@@ -39,4 +23,4 @@ python -m probing.run_probing run \
 
 Use `--model r1_searcher` for R1-Searcher. `--hf-model` can override the default Hugging Face model used by the selected agent. Additional backend or agent constructor settings can be supplied as JSON through `--backend-args` and `--agent-kwargs`.
 
-The paper's prediction head uses the iteration-level `prob` and `diff_prob` columns produced by this step.
+The trajectory-level output contains the probe answers and confidence traces. When `--features-output-csv` is supplied, the runner also writes the aligned iteration-level `prob` and `diff_prob` features used by the probing-enhanced prediction setting.
