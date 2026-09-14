@@ -1,0 +1,31 @@
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+.DS_Store
+
+# Large local experiment data
+# Keep these directories available for cluster-side artifacts while ignoring
+# the CSV payloads so copying results in/out does not affect git sync.
+/data/retrieval_results/**/*.csv
+/data/probed_trajectories/**/*.csv
+/data/evaluation_results/**/*.csv
+
+# Local prediction outputs. README placeholders remain tracked.
+/predictions/prediction_head/prediction_results/**/*.csv
+/predictions/supervised/prediction_results/**/*.csv
+
+# Local experiment outputs / checkpoints
+results/
+*_results/
+**/*_results/
+checkpoints/
+saved_checkpoints/
+saved_regression_preds/
+spread_sheets/
+wandb/
+wandb_key.txt
+*.joblib
+*.pt
+*.pth
+*.ckpt

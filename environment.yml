@@ -1,0 +1,23 @@
+name: agentic-rag-prediction
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.11
+  - pip
+  - openjdk=17
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - pytorch
+  - tqdm
+  - faiss-cpu
+  - pip:
+      - transformers
+      - sentence-transformers
+      - python-terrier
+      - pyterrier-alpha
+      - pyterrier-dr
+      - pyterrier-rag
+      - pytest
