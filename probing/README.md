@@ -6,16 +6,13 @@ Probe 0 is the zero-retrieval answer obtained **after initial reasoning `r0` and
 
 ## CLI
 
-A live probing run requires a PyTerrier retriever. Because index locations and construction differ across installations, the CLI accepts a small Python retriever factory in `module:function` form. The factory must return a `pyterrier.Transformer`.
-
-For example, if `my_retriever.py` provides `build_retriever(...)`, run:
+The live probing path follows the paper's canonical E5 dense-retrieval setup. The supplied dense index should be a prepared PyTerrier-DR FlexIndex backed by the HNSW FAISS index used in the experiments.
 
 ```bash
 python -m probing.run_probing run \
     --queries-csv <QUERY_CSV> \
     --model search_r1 \
-    --retriever-factory my_retriever:build_retriever \
-    --retriever-kwargs '{"index_path": "<E5_INDEX>"}' \
+    --dense-index <E5_INDEX> \
     --output-csv <PROBING_RESULTS_CSV> \
     --features-output-csv <PROBING_FEATURES_CSV> \
     --top-k 3
