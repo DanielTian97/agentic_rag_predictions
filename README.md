@@ -146,20 +146,21 @@ python -m predictions.supervised.train \
 
 ### 3. Optional: run intermediate-answer probing
 
-For the probing-enhanced setting, run Search-R1 or R1-Searcher with intermediate-answer probing directly:
+For the probing-enhanced setting, run Search-R1 or R1-Searcher with intermediate-answer probing directly using the paper's E5 HNSW retrieval setup:
 
 ```bash
 python -m probing.run_probing run \
     --queries-csv <QUERY_CSV> \
     --model search_r1 \
-    --retriever-factory my_retriever:build_retriever \
-    --retriever-kwargs '{"index_path": "<E5_INDEX>"}' \
+    --dense-index <E5_INDEX> \
     --output-csv <PROBING_RESULTS_CSV> \
     --features-output-csv <PROBING_FEATURES_CSV> \
     --top-k 3
 ```
 
-Use `--model r1_searcher` for R1-Searcher. The trajectory-level probing output records the intermediate answers and confidence traces; supplying `--features-output-csv` additionally writes the aligned `prob` and `diff_prob` features used by the probing-enhanced prediction head. See [`probing/README.md`](probing/README.md) for the retriever-factory interface.
+Use `--model r1_searcher` for R1-Searcher. The supplied dense index is expected to be the prepared HNSW-backed E5 PyTerrier-DR FlexIndex used by the retrieval pipeline. HNSW is part of the index configuration and is not exposed as a separate CLI option.
+
+The trajectory-level probing output records the intermediate answers and confidence traces; supplying `--features-output-csv` additionally writes the aligned `prob` and `diff_prob` features used by the probing-enhanced prediction head.
 
 ### 4. Train the prediction head and obtain P_i and U_i predictions
 
