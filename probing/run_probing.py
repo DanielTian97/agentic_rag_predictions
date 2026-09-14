@@ -1,12 +1,8 @@
-"""Run intermediate-answer probing or extract probing confidence features.
+"""Run intermediate-answer probing for Search-R1 or R1-Searcher.
 
-The CLI exposes two modes:
-
-1. ``run`` executes a probed Search-R1 or R1-Searcher agent over a query CSV,
-   saves the trajectory-level probing output, and optionally writes the
-   iteration-level ``prob``/``diff_prob`` features used by the paper.
-2. ``features`` converts an existing probing-output CSV into the iteration-level
-   confidence features without rerunning the agent.
+The CLI executes a probed agent over a query CSV and saves the trajectory-level
+probing output. It can also optionally write the iteration-level ``prob`` and
+``diff_prob`` features used by the paper.
 
 A live probing run needs a PyTerrier retriever. To keep this release agnostic to
 local index layouts, the retriever is supplied through a Python factory callable
@@ -60,17 +56,7 @@ def run_probing(
     *,
     batch_size: int = 6,
 ) -> pd.DataFrame:
-    """Run an agent over a query dataframe in deterministic dataframe batches.
-
-    Parameters
-    ----------
-    queries:
-        Dataframe containing at least ``qid`` and ``query``.
-    agent:
-        A probed Search-R1 or R1-Searcher transformer.
-    batch_size:
-        Number of trajectories supplied to the batched agent at a time.
-    """
+    """Run an agent over a query dataframe in deterministic dataframe batches."""
     required = {"qid", "query"}
     missing = required.difference(queries.columns)
     if missing:
@@ -98,13 +84,9 @@ def _parse_list(value):
 def build_confidence_features(probing_results: pd.DataFrame) -> pd.DataFrame:
     """Expand trajectory-level probe outputs into iteration-level confidence features.
 
-    If ``probed_probs_after_think`` is available, those scalar confidences are
-    used directly. Otherwise, ``probed_logits_after_think`` is reduced with the
-    mean-token-logprob rule.
-
-    Probe 0 is the zero-retrieval (zero-shot) answer obtained after the model's
-    initial reasoning ``r0`` and before any external retrieval. Iteration row 0
-    then uses probe 1 and its change from probe 0.
+    Probe 0 is the zero-retrieval answer obtained after initial reasoning ``r0``
+    and before external retrieval. Iteration row 0 uses probe 1 and its change
+    from probe 0.
     """
     if "qid" not in probing_results.columns:
         raise ValueError("probing_results is missing required column: qid")
@@ -115,8 +97,6 @@ def build_confidence_features(probing_results: pd.DataFrame) -> pd.DataFrame:
             probs = _parse_list(row.probed_probs_after_think)
             if probs is None:
                 continue
-            # confidence_feature_rows expects token-level traces. Scalar probe
-            # confidences are already reduced, so construct rows directly.
             probs = [float(value) for value in probs]
             if len(probs) < 2:
                 continue
@@ -218,24 +198,10 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional JSON object of additional agent constructor arguments.",
     )
-
-    features_parser = subparsers.add_parser(
-        "features",
-        help="Extract prob/diff_prob from an existing probing-output CSV.",
-    )
-    features_parser.add_argument("--probing-csv", type=Path, required=True)
-    features_parser.add_argument("--output-csv", type=Path, required=True)
-
     return parser
 
 
 def _run_cli(args: argparse.Namespace) -> None:
-    if args.command == "features":
-        probing_results = pd.read_csv(args.probing_csv)
-        features = build_confidence_features(probing_results)
-        _write_csv(features, args.output_csv)
-        return
-
     queries = pd.read_csv(args.queries_csv)
     factory = _load_factory(args.retriever_factory)
     retriever_kwargs = _parse_json_object(
