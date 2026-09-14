@@ -8,21 +8,23 @@ The CLI exposes two modes:
 2. ``features`` converts an existing probing-output CSV into the iteration-level
    confidence features without rerunning the agent.
 
-A live probing run needs a PyTerrier retriever. To keep this release agnostic to
-local index layouts, the retriever is supplied through a Python factory callable
-(``module:function``) that returns a ``pt.Transformer``.
+The live probing path uses the paper's canonical E5 dense retrieval setup over a
+PyTerrier-DR FlexIndex. In the original experiments the FlexIndex was backed by
+an HNSW FAISS index; the index path supplied here should point to that prepared
+E5 FlexIndex.
 """
 from __future__ import annotations
 
 import argparse
 import ast
-import importlib
 import json
 from pathlib import Path
 from typing import Literal
 
 import pandas as pd
 import pyterrier as pt
+import pyterrier_dr
+from pyterrier_dr import E5
 
 from .agents import ProbedR1Searcher, ProbedSearchR1
 from .confidence import confidence_feature_rows
@@ -52,6 +54,18 @@ def build_agent(
             **agent_kwargs,
         )
     raise ValueError(f"Unknown model: {model}")
+
+
+def build_e5_retriever(dense_index_path: str | Path) -> pt.Transformer:
+    """Build the paper's canonical E5 retriever over a prepared FlexIndex.
+
+    The released experiments used an HNSW-backed E5 FlexIndex. HNSW is therefore
+    treated as part of the prepared index rather than exposed as a separate CLI
+    option.
+    """
+    dense_index = pyterrier_dr.FlexIndex(str(dense_index_path))
+    query_encoder = E5()
+    return query_encoder >> dense_index
 
 
 def run_probing(
@@ -131,18 +145,6 @@ def build_confidence_features(probing_results: pd.DataFrame) -> pd.DataFrame:
     return pd.concat(frames, ignore_index=True)
 
 
-def _load_factory(spec: str):
-    """Load a ``module:function`` retriever factory."""
-    if ":" not in spec:
-        raise ValueError("retriever factory must use the form 'module:function'")
-    module_name, function_name = spec.split(":", 1)
-    module = importlib.import_module(module_name)
-    factory = getattr(module, function_name, None)
-    if factory is None or not callable(factory):
-        raise ValueError(f"retriever factory is not callable: {spec}")
-    return factory
-
-
 def _parse_json_object(value: str | None, *, name: str) -> dict:
     if not value:
         return {}
@@ -174,14 +176,10 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Agent implementation to probe.",
     )
     run_parser.add_argument(
-        "--retriever-factory",
+        "--dense-index",
+        type=Path,
         required=True,
-        help="Python callable in module:function form returning a pt.Transformer.",
-    )
-    run_parser.add_argument(
-        "--retriever-kwargs",
-        default=None,
-        help="Optional JSON object passed to the retriever factory.",
+        help="Path to the prepared HNSW-backed E5 PyTerrier-DR FlexIndex.",
     )
     run_parser.add_argument("--output-csv", type=Path, required=True)
     run_parser.add_argument("--features-output-csv", type=Path, default=None)
@@ -221,14 +219,7 @@ def _run_cli(args: argparse.Namespace) -> None:
         return
 
     queries = pd.read_csv(args.queries_csv)
-    factory = _load_factory(args.retriever_factory)
-    retriever_kwargs = _parse_json_object(
-        args.retriever_kwargs,
-        name="retriever kwargs",
-    )
-    retriever = factory(**retriever_kwargs)
-    if not isinstance(retriever, pt.Transformer):
-        raise TypeError("retriever factory must return a pyterrier.Transformer")
+    retriever = build_e5_retriever(args.dense_index)
 
     backend_args = _parse_json_object(args.backend_args, name="backend args") or None
     agent_kwargs = _parse_json_object(args.agent_kwargs, name="agent kwargs")
@@ -263,4 +254,9 @@ if __name__ == "__main__":
     main()
 
 
-__all__ = ["build_agent", "run_probing", "build_confidence_features"]
+__all__ = [
+    "build_agent",
+    "build_e5_retriever",
+    "run_probing",
+    "build_confidence_features",
+]
